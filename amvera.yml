@@ -1,0 +1,12 @@
+---
+version: null
+meta:
+  environment: node
+  toolchain:
+    name: npm
+    version: 16
+build:
+  additionalCommands: npm i && npm run build
+run:
+  command: npm run start:cluster
+  containerPort: 3000

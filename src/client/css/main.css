@@ -1,145 +1,263 @@
-html, body {
+@import './bootstrap-reboot.css';
+
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 100%);
   overflow: hidden;
-  overscroll-behavior: none;
-  background-color: black;
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  margin: 1rem 0;
-  width: 100%;
-}
-
-button {
-  font-size: 18px;
-  outline: none;
-  border: none;
-  color: black;
-  background-color: transparent;
-  padding: 5px 20px;
-  border-radius: 3px;
-  transition: background-color 0.2s ease;
-}
-
-button:hover {
-  background-color: rgb(230, 230, 230);
-}
-
-button:focus {
-  outline: none;
-}
-
-.hidden {
-  display: none !important;
 }
 
 #game-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
+  background: linear-gradient(to bottom, #0f3460 0%, #16213e 50%, #1a1a2e 100%);
 }
 
 #play-menu {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translateY(-50%) translateX(-50%);
-  padding: 20px 30px;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border-radius: 5px;
+  transform: translate(-50%, -50%);
+  background: rgba(22, 33, 62, 0.95);
+  padding: 40px;
+  border-radius: 20px;
   text-align: center;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  border: 2px solid #00d4ff;
+  max-width: 500px;
+  width: 90%;
+}
+
+#play-menu h1 {
+  color: #00d4ff;
+  font-size: 48px;
+  margin-bottom: 10px;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  font-weight: bold;
 }
 
 #play-menu p {
-  margin-bottom: 0;
-}
-
-#play-menu input {
+  color: #fff;
   font-size: 18px;
-  outline: none;
-  border: none;
-  border-bottom: 1px solid black;
-  margin-bottom: 5px;
-  padding: 3px;
-  text-align: center;
+  margin-bottom: 30px;
+  opacity: 0.9;
 }
 
-#play-menu input:hover {
+#username-input {
+  width: 100%;
+  padding: 15px;
+  font-size: 18px;
+  border: 2px solid #00d4ff;
+  border-radius: 10px;
+  background: rgba(15, 52, 96, 0.8);
+  color: #fff;
+  margin-bottom: 20px;
+  text-align: center;
   outline: none;
+  transition: all 0.3s ease;
+}
+
+#username-input:focus {
+  border-color: #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+#username-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#play-button {
+  width: 100%;
+  padding: 15px;
+  font-size: 22px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+}
+
+#play-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.6);
+}
+
+#play-button:active {
+  transform: translateY(-1px);
+}
+
+.instructions {
+  margin-top: 30px;
+  text-align: left;
+  background: rgba(15, 52, 96, 0.5);
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.instructions h3 {
+  color: #00ff88;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.instructions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.instructions li {
+  color: #fff;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 #leaderboard {
   position: fixed;
-  top: 10px;
-  right: 10px;
-  background-color: rgba(255, 255, 255, 0.5);
-  padding: 10px;
-  border-radius: 5px;
+  top: 20px;
+  right: 20px;
+  background: rgba(22, 33, 62, 0.9);
+  padding: 20px;
+  border-radius: 15px;
+  border: 2px solid #00d4ff;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.5);
+  min-width: 250px;
+}
+
+#leaderboard h2 {
+  color: #00d4ff;
+  font-size: 24px;
+  margin-bottom: 15px;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+#leaderboard table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 #leaderboard th {
-  text-align: center;
-  padding: 2px 5px;
+  color: #00ff88;
+  font-size: 14px;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 2px solid rgba(0, 212, 255, 0.3);
 }
 
 #leaderboard td {
-  text-align: center;
-  padding: 2px 5px;
+  color: #fff;
+  font-size: 14px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.1);
 }
 
-#disconnect-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.75);
+#leaderboard tr:nth-child(1) td:first-child {
+  color: #FFD700;
+  font-weight: bold;
 }
 
-#disconnect-modal > div {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translateY(-50%) translateX(-50%);
-  padding: 15px 20px;
-  background-color: white;
-  border-radius: 5px;
-  text-align: center;
+#leaderboard tr:nth-child(2) td:first-child {
+  color: #C0C0C0;
+  font-weight: bold;
 }
 
-@media screen and (max-width: 640px) {
-  h1 {
-    font-size: 2rem;
-  }
+#leaderboard tr:nth-child(3) td:first-child {
+  color: #CD7F32;
+  font-weight: bold;
+}
 
-  h2 {
-    font-size: 1.75rem;
-  }
+.hidden {
+  display: none !important;
+}
 
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
   #play-menu {
-    padding: 10px 15px;
-    min-width: 280px;
+    padding: 30px 20px;
   }
 
-  #disconnect-modal > div {
-    padding: 10px;
-    min-width: 280px;
+  #play-menu h1 {
+    font-size: 36px;
   }
 
-  #leaderboard th {
-    padding: 0 3px;
+  #leaderboard {
+    top: 10px;
+    right: 10px;
+    padding: 15px;
+    min-width: 200px;
   }
 
+  #leaderboard h2 {
+    font-size: 18px;
+  }
+
+  #leaderboard th,
   #leaderboard td {
-    padding: 0 3px;
+    font-size: 12px;
+    padding: 6px;
   }
 
-  #leaderboard table {
-    font-size: 14px;
+  .instructions {
+    padding: 15px;
+  }
+
+  .instructions li {
+    font-size: 12px;
+  }
+}
+
+
+/* ... существующие стили ... */
+
+.lobby-info {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.lobby-badge {
+  background: rgba(22, 33, 62, 0.95);
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 2px solid #00d4ff;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.6;
+  text-align: center;
+  min-width: 150px;
+}
+
+.lobby-badge br {
+  margin: 5px 0;
+}
+
+@media (max-width: 768px) {
+  .lobby-info {
+    top: 10px;
+    left: 10px;
+  }
+  
+  .lobby-badge {
+    padding: 10px 15px;
+    font-size: 12px;
+    min-width: 120px;
   }
 }

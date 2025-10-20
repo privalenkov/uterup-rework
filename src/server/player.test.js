@@ -1,66 +1,36 @@
 const Player = require('./player');
-const Bullet = require('./bullet');
 const Constants = require('../shared/constants');
 
 describe('Player', () => {
-  describe('update', () => {
-    it('should gain score each second', () => {
-      const player = new Player('123', 'guest');
-      const initialScore = player.score;
-
-      player.update(1);
-
-      expect(player.score).toBeGreaterThan(initialScore);
-    });
-
-    it('should fire bullet on update', () => {
-      const player = new Player('123', 'guest');
-
-      expect(player.update(Constants.PLAYER_FIRE_COOLDOWN / 3))
-        .toBeInstanceOf(Bullet);
-    });
-
-    it('should not fire bullet during cooldown', () => {
-      const player = new Player('123', 'guest');
-
-      player.update(Constants.PLAYER_FIRE_COOLDOWN / 3);
-
-      expect(player.update(Constants.PLAYER_FIRE_COOLDOWN / 3)).toBe(null);
-    });
-  });
-  describe('takeBulletDamage', () => {
-    it('should take damage when hit', () => {
-      const player = new Player('123', 'guest');
-
-      const initialHp = player.hp;
-
-      player.takeBulletDamage();
-
-      expect(player.hp).toBeLessThan(initialHp);
-    });
+  test('Player initializes correctly', () => {
+    const player = new Player('test-id', 'TestUser', 100, 100);
+    
+    expect(player.id).toBe('test-id');
+    expect(player.username).toBe('TestUser');
+    expect(player.x).toBe(100);
+    expect(player.y).toBe(100);
+    expect(player.jumpCount).toBe(0);
+    expect(player.isOnGround).toBe(false);
   });
 
-  describe('onDealtDamage', () => {
-    it('should increment score when dealing damage', () => {
-      const player = new Player('123', 'guest');
-
-      const initialScore = player.score;
-
-      player.onDealtDamage();
-
-      expect(player.score).toBeGreaterThan(initialScore);
-    });
+  test('Player can charge jump', () => {
+    const player = new Player('test-id', 'TestUser', 100, 100);
+    player.isOnGround = true;
+    player.isCharging = true;
+    
+    player.update(100, { space: true }, []);
+    
+    expect(player.jumpCharge).toBeGreaterThan(0);
   });
 
-  describe('serializeForUpdate', () => {
-    it('include hp and direction in serialization', () => {
-      const player = new Player('123', 'guest');
-
-      expect(player.serializeForUpdate())
-        .toEqual(expect.objectContaining({
-          hp: Constants.PLAYER_MAX_HP,
-          direction: expect.any(Number),
-        }));
-    });
+  test('Player serializes correctly', () => {
+    const player = new Player('test-id', 'TestUser', 100, 200);
+    const serialized = player.serializeForUpdate();
+    
+    expect(serialized).toHaveProperty('id');
+    expect(serialized).toHaveProperty('x');
+    expect(serialized).toHaveProperty('y');
+    expect(serialized).toHaveProperty('username');
+    expect(serialized).toHaveProperty('jumpCount');
   });
 });

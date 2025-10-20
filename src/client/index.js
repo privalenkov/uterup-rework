@@ -1,42 +1,72 @@
-// Learn more about this file at:
-// https://victorzhou.com/blog/build-an-io-game-part-1/#3-client-entrypoints
 import { connect, play } from './networking';
 import { startRendering, stopRendering } from './render';
 import { startCapturingInput, stopCapturingInput } from './input';
-import { downloadAssets } from './assets';
 import { initState } from './state';
 import { setLeaderboardHidden } from './leaderboard';
-
-// I'm using a tiny subset of Bootstrap here for convenience - there's some wasted CSS,
-// but not much. In general, you should be careful using Bootstrap because it makes it
-// easy to unnecessarily bloat your site.
-import './css/bootstrap-reboot.css';
 import './css/main.css';
 
 const playMenu = document.getElementById('play-menu');
 const playButton = document.getElementById('play-button');
 const usernameInput = document.getElementById('username-input');
+const lobbyInfo = document.getElementById('lobby-info');
+
+// Создаем элемент для отображения информации о лобби
+if (!lobbyInfo) {
+  const lobbyInfoDiv = document.createElement('div');
+  lobbyInfoDiv.id = 'lobby-info';
+  lobbyInfoDiv.className = 'lobby-info hidden';
+  document.body.appendChild(lobbyInfoDiv);
+}
 
 Promise.all([
-  connect(onGameOver),
-  downloadAssets(),
+  connect(),
 ]).then(() => {
   playMenu.classList.remove('hidden');
   usernameInput.focus();
+  
   playButton.onclick = () => {
-    // Play!
-    play(usernameInput.value);
+    const username = usernameInput.value.trim() || 'Anonymous';
+    
+    playButton.disabled = true;
+    playButton.textContent = 'Joining...';
+    
+    play(username);
     playMenu.classList.add('hidden');
     initState();
     startCapturingInput();
     startRendering();
     setLeaderboardHidden(false);
   };
-}).catch(console.error);
 
-function onGameOver() {
-  stopCapturingInput();
-  stopRendering();
-  playMenu.classList.remove('hidden');
-  setLeaderboardHidden(true);
+  usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      playButton.click();
+    }
+  });
+});
+
+// Показываем информацию о лобби
+export function showLobbyInfo(lobbyData) {
+  const lobbyInfoDiv = document.getElementById('lobby-info');
+  if (lobbyInfoDiv) {
+    lobbyInfoDiv.innerHTML = `
+      <div class="lobby-badge">
+        🏠 Lobby: ${lobbyData.lobbyId}<br>
+        👥 Players: ${lobbyData.players}/${lobbyData.maxPlayers}
+      </div>
+    `;
+    lobbyInfoDiv.classList.remove('hidden');
+  }
+}
+
+export function updateLobbyInfo(lobbyData) {
+  const lobbyInfoDiv = document.getElementById('lobby-info');
+  if (lobbyInfoDiv && !lobbyInfoDiv.classList.contains('hidden')) {
+    lobbyInfoDiv.innerHTML = `
+      <div class="lobby-badge">
+        🏠 Lobby: ${lobbyData.id}<br>
+        👥 Players: ${lobbyData.players}/${lobbyData.maxPlayers}
+      </div>
+    `;
+  }
 }

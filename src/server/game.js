@@ -1,117 +1,140 @@
 const Constants = require('../shared/constants');
 const Player = require('./player');
-const applyCollisions = require('./collisions');
+const { generateMap } = require('./map');
 
 class Game {
   constructor() {
     this.sockets = {};
     this.players = {};
-    this.bullets = [];
+    this.inputs = {};
     this.lastUpdateTime = Date.now();
-    this.shouldSendUpdate = false;
-    setInterval(this.update.bind(this), 1000 / 60);
+    this.map = generateMap();
+    
+    // Кэш для nearby players (обновляется реже)
+    this.nearbyPlayersCache = {};
+    this.cacheUpdateCounter = 0;
+    
+    setInterval(this.update.bind(this), 1000 / Constants.SERVER_UPDATE_RATE);
   }
 
   addPlayer(socket, username) {
-    this.sockets[socket.id] = socket;
+    if (Object.keys(this.players).length >= Constants.PLAYER_MAX_COUNT) {
+      return null;
+    }
 
-    // Generate a position to start this player at.
-    const x = Constants.MAP_SIZE * (0.25 + Math.random() * 0.5);
-    const y = Constants.MAP_SIZE * (0.25 + Math.random() * 0.5);
-    this.players[socket.id] = new Player(socket.id, username, x, y);
+    this.sockets[socket.id] = socket;
+    this.inputs[socket.id] = { left: false, right: false, space: false };
+
+    const startX = 5 * Constants.TILE_SIZE;
+    const startY = (Constants.MAP_HEIGHT - 3) * Constants.TILE_SIZE - Constants.PLAYER_HEIGHT;
+    
+    this.players[socket.id] = new Player(socket.id, username, startX, startY);
+    return this.players[socket.id];
   }
 
   removePlayer(socket) {
     delete this.sockets[socket.id];
     delete this.players[socket.id];
+    delete this.inputs[socket.id];
+    delete this.nearbyPlayersCache[socket.id];
   }
 
-  handleInput(socket, dir) {
+  handleInput(socket, input) {
     if (this.players[socket.id]) {
-      this.players[socket.id].setDirection(dir);
+      this.inputs[socket.id] = input;
     }
   }
 
   update() {
-    // Calculate time elapsed
     const now = Date.now();
     const dt = (now - this.lastUpdateTime) / 1000;
     this.lastUpdateTime = now;
 
-    // Update each bullet
-    const bulletsToRemove = [];
-    this.bullets.forEach(bullet => {
-      if (bullet.update(dt)) {
-        // Destroy this bullet
-        bulletsToRemove.push(bullet);
-      }
-    });
-    this.bullets = this.bullets.filter(bullet => !bulletsToRemove.includes(bullet));
-
-    // Update each player
-    Object.keys(this.sockets).forEach(playerID => {
-      const player = this.players[playerID];
-      const newBullet = player.update(dt);
-      if (newBullet) {
-        this.bullets.push(newBullet);
-      }
-    });
-
-    // Apply collisions, give players score for hitting bullets
-    const destroyedBullets = applyCollisions(Object.values(this.players), this.bullets);
-    destroyedBullets.forEach(b => {
-      if (this.players[b.parentID]) {
-        this.players[b.parentID].onDealtDamage();
-      }
-    });
-    this.bullets = this.bullets.filter(bullet => !destroyedBullets.includes(bullet));
-
-    // Check if any players are dead
-    Object.keys(this.sockets).forEach(playerID => {
-      const socket = this.sockets[playerID];
-      const player = this.players[playerID];
-      if (player.hp <= 0) {
-        socket.emit(Constants.MSG_TYPES.GAME_OVER);
-        this.removePlayer(socket);
-      }
-    });
-
-    // Send a game update to each player every other time
-    if (this.shouldSendUpdate) {
-      const leaderboard = this.getLeaderboard();
-      Object.keys(this.sockets).forEach(playerID => {
-        const socket = this.sockets[playerID];
-        const player = this.players[playerID];
-        socket.emit(Constants.MSG_TYPES.GAME_UPDATE, this.createUpdate(player, leaderboard));
-      });
-      this.shouldSendUpdate = false;
-    } else {
-      this.shouldSendUpdate = true;
+    // Обновляем всех игроков (НЕ пропускаем никого!)
+    const playerIds = Object.keys(this.players);
+    for (let i = 0; i < playerIds.length; i++) {
+      const playerId = playerIds[i];
+      const player = this.players[playerId];
+      const input = this.inputs[playerId];
+      player.update(dt, input, this.map);
     }
+
+    // ОПТИМИЗАЦИЯ 1: Обновляем nearby игроков только каждые 2 кадра
+    // (игрок не заметит задержки в 66мс для позиций других игроков)
+    this.cacheUpdateCounter++;
+    if (this.cacheUpdateCounter >= 2) {
+      this.updateNearbyPlayersCache();
+      this.cacheUpdateCounter = 0;
+    }
+
+    // Отправляем обновления всем игрокам
+    for (let i = 0; i < playerIds.length; i++) {
+      const playerId = playerIds[i];
+      const socket = this.sockets[playerId];
+      const player = this.players[playerId];
+      
+      if (player && socket) {
+        // ОПТИМИЗАЦИЯ 2: используем volatile для некритичных обновлений
+        // (пропускает пакеты если клиент не успевает)
+        socket.volatile.emit(Constants.MSG_TYPES.GAME_UPDATE, this.createUpdate(player, playerId));
+      }
+    }
+  }
+
+  updateNearbyPlayersCache() {
+    const playerIds = Object.keys(this.players);
+    
+    for (let i = 0; i < playerIds.length; i++) {
+      const playerId = playerIds[i];
+      const player = this.players[playerId];
+      
+      const nearby = [];
+      for (let j = 0; j < playerIds.length; j++) {
+        if (i === j) continue;
+        
+        const otherPlayer = this.players[playerIds[j]];
+        const verticalDist = Math.abs(otherPlayer.y - player.y);
+        const horizontalDist = Math.abs(otherPlayer.x - player.x);
+        
+        // Видимость в пределах экрана + запас
+        if (verticalDist < 800 && horizontalDist < 640) {
+          nearby.push(otherPlayer.serializeForUpdate());
+        }
+      }
+      
+      this.nearbyPlayersCache[playerId] = nearby;
+    }
+  }
+
+  createUpdate(player, playerId) {
+    // Используем кэш nearby игроков
+    const nearbyPlayers = this.nearbyPlayersCache[playerId] || [];
+
+    const update = {
+      t: Date.now(),
+      me: player.serializeForUpdate(),
+      others: nearbyPlayers,
+      leaderboard: this.getLeaderboard()
+    };
+
+    // Карту отправляем только один раз
+    if (!player.mapSent) {
+      update.map = this.map;
+      player.mapSent = true;
+    }
+
+    return update;
   }
 
   getLeaderboard() {
     return Object.values(this.players)
-      .sort((p1, p2) => p2.score - p1.score)
-      .slice(0, 5)
-      .map(p => ({ username: p.username, score: Math.round(p.score) }));
-  }
-
-  createUpdate(player, leaderboard) {
-    const nearbyPlayers = Object.values(this.players).filter(
-      p => p !== player && p.distanceTo(player) <= Constants.MAP_SIZE / 2,
-    );
-    const nearbyBullets = this.bullets.filter(
-      b => b.distanceTo(player) <= Constants.MAP_SIZE / 2,
-    );
-
-    return {
-      t: Date.now(),
-      me: player.serializeForUpdate(),
-      others: nearbyPlayers.map(p => p.serializeForUpdate()),
-      bullets: nearbyBullets.map(b => b.serializeForUpdate()),
-      leaderboard,
-    };
+      .filter(p => p.finishTime !== null)
+      .sort((a, b) => a.averageJumps - b.averageJumps)
+      .slice(0, 10)
+      .map(p => ({
+        username: p.username,
+        jumps: p.averageJumps
+      }));
   }
 }
 

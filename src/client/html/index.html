@@ -1,63 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>An example .io game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="shortcut icon" href="/assets/icon64.png">
-  <meta property="description" content="A complete example multiplayer .io web game implemented from scratch. Built with Javascript and Node.js. Open source on Github.">
-  <meta property="og:title" content="An example .io game">
-  <meta property="og:description" content="A complete example multiplayer .io web game implemented from scratch. Built with Javascript and Node.js. Open source on Github.">
-  <meta property="og:image" content="/assets/icon1200.png">
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-58664433-3"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'UA-58664433-3');
-  </script>
+  <title>Jump King .io Game</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
   <canvas id="game-canvas"></canvas>
+  
   <div id="play-menu" class="hidden">
-    <h1>An example .io game</h1>
-    <p>
-      Stay alive and shoot other players.
-      <br />
-      Use your mouse to move.
-    </p>
-    <hr />
-    <p>
-      <!-- <br /> -->
-      Read the tutorial: <a href="https://victorzhou.com/blog/build-an-io-game-part-1/" target="_blank">How to Build an .io Game</a>.
-      <br />
-      See the source code on <a href="https://github.com/vzhou842/example-.io-game" target="_blank">Github</a>.
-      <br />
-      Created by <a href="https://victorzhou.com">Victor Zhou</a>.
-    </p>
-    <hr />
-    <input type="text" id="username-input" placeholder="Username" />
-    <button id="play-button">PLAY</button>
-  </div>
-  <div id="leaderboard" class="hidden">
-    <table>
-      <tr>
-        <th>Username</th>
-        <th>Score</th>
-      </tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-      <tr><td></td><td></td></tr>
-    </table>
-  </div>
-  <div id="disconnect-modal" class="hidden">
-    <div>
-      <h2>Disconnected from Server </h2>
-      <hr />
-      <button id="reconnect-button">RECONNECT</button>
+    <h1>Jump King .io</h1>
+    <p>Reach the top with minimum jumps!</p>
+    <input type="text" id="username-input" placeholder="Enter your name" maxlength="15" />
+    <button id="play-button">START CLIMBING</button>
+    <div class="instructions">
+      <h3>How to Play:</h3>
+      <ul>
+        <li>🎮 Use Arrow Keys or A/D to move left/right</li>
+        <li>⬆️ Hold SPACE to charge jump, release to jump</li>
+        <li>🧊 <span style="color: #87CEEB;">Ice tiles</span> - You slide!</li>
+        <li>❄️ <span style="color: #FFFAFA;">Snow tiles</span> - Jump only, no walking</li>
+        <li>🔻 <span style="color: #FF6347;">Slope tiles</span> - You slide down uncontrollably</li>
+        <li>🏆 <span style="color: #FFD700;">Gold tiles</span> - Finish line!</li>
+      </ul>
     </div>
   </div>
+
+  <div id="leaderboard" class="hidden">
+    <h2>🏆 Top Climbers</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player</th>
+          <th>Jumps</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>-</td><td>-</td></tr>
+        <tr><td>2</td><td>-</td><td>-</td></tr>
+        <tr><td>3</td><td>-</td><td>-</td></tr>
+        <tr><td>4</td><td>-</td><td>-</td></tr>
+        <tr><td>5</td><td>-</td><td>-</td></tr>
+        <tr><td>6</td><td>-</td><td>-</td></tr>
+        <tr><td>7</td><td>-</td><td>-</td></tr>
+        <tr><td>8</td><td>-</td><td>-</td></tr>
+        <tr><td>9</td><td>-</td><td>-</td></tr>
+        <tr><td>10</td><td>-</td><td>-</td></tr>
+      </tbody>
+    </table>
+  </div>
+
 </body>
 </html>
