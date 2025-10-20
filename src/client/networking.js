@@ -3,7 +3,9 @@ import { processGameUpdate } from './state';
 import { showLobbyInfo, updateLobbyInfo } from './index';
 const Constants = require('../shared/constants');
 
-const socket = io(`ws://${window.location.host}`);
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const socket = io(isDevelopment ? `ws://${window.location.host}` : `wss://${window.location.host}`);
 const connectedPromise = new Promise(resolve => {
   socket.on('connect', () => {
     console.log('Connected to server!');
