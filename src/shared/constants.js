@@ -37,7 +37,7 @@ module.exports = Object.freeze({
   MAP_WIDTH: 20,
   MAP_HEIGHT: 100,
   
-  PLAYER_MAX_COUNT: 300,
+  PLAYER_MAX_COUNT: 70,
   SERVER_UPDATE_RATE: 30, // Оставляем 20 для плавности
   
   ICE_SLIDE_SPEED: 8,

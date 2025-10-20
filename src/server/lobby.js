@@ -23,9 +23,15 @@ class Lobby {
 
   addPlayer(socket, username) {
     if (this.isFull()) {
+      // Отправляем сообщение что лобби полное
+      socket.emit('lobby_full', {
+        message: 'This lobby is full',
+        players: this.players.size,
+        maxPlayers: this.maxPlayers
+      });
       return false;
     }
-
+  
     const player = this.game.addPlayer(socket, username);
     if (player) {
       this.players.set(socket.id, {
@@ -34,8 +40,13 @@ class Lobby {
         joinedAt: Date.now()
       });
       return true;
+    } else {
+      // Игра внутри лобби полная (должно быть редко)
+      socket.emit('game_full', {
+        message: 'Game is full'
+      });
+      return false;
     }
-    return false;
   }
 
   removePlayer(socket) {

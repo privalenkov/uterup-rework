@@ -177,20 +177,34 @@ class Player extends GameObject {
   }
 
   handleInput(input, prevInput) {
-    // Отслеживаем отпускание пробела
-    if (!input.space && prevInput && prevInput.space) {
-      this.spaceReleased = true;
-      
-      // Если зарядка была активна - прыгаем
+    // Обнаружили отпускание пробела
+    const spaceJustReleased = !input.space && prevInput && prevInput.space;
+    // Обнаружили нажатие пробела
+    const spaceJustPressed = input.space && (!prevInput || !prevInput.space);
+    
+    // 1. ОТПУСКАНИЕ ПРОБЕЛА
+    if (spaceJustReleased) {
       if (this.isCharging) {
-        console.log(`[DEBUG] Manual jump with direction: ${this.jumpDirection}`); // Отладка
+        // Если заряжались - совершаем прыжок
+        console.log(`[DEBUG] Manual jump with direction: ${this.jumpDirection}`);
         this.performJump();
+        // performJump() установит spaceReleased = false
+      } else {
+        // Просто отпустили пробел - разрешаем следующую зарядку
+        this.spaceReleased = true;
       }
     }
-  
-    // Начинаем зарядку
-    if (input.space && (!prevInput || !prevInput.space)) {
-      if (this.spaceReleased && this.isOnGround && !this.isCharging && this.canJump) {
+    
+    // 2. НАЖАТИЕ ПРОБЕЛА
+    if (spaceJustPressed) {
+      // Проверяем все условия для начала зарядки
+      const canStartCharging = 
+        this.spaceReleased &&     // Пробел был отпущен после последнего прыжка
+        this.isOnGround &&        // Игрок на земле
+        !this.isCharging &&       // Не заряжаемся сейчас
+        this.canJump;             // Нет кулдауна
+      
+      if (canStartCharging) {
         this.isCharging = true;
         this.jumpCharge = Constants.JUMP_MIN_POWER;
         
@@ -203,9 +217,20 @@ class Player extends GameObject {
           this.jumpDirection = 0;
         }
         
-        console.log(`[DEBUG] Start charging, initial direction: ${this.jumpDirection}`); // Отладка
+        console.log(`[DEBUG] Start charging, initial direction: ${this.jumpDirection}, spaceReleased was: ${this.spaceReleased}`);
         
         this.velocityX = 0;
+      } else {
+        // Отладка - почему не началась зарядка
+        if (!this.spaceReleased) {
+          console.log(`[DEBUG] Cannot charge: space not released yet`);
+        } else if (!this.isOnGround) {
+          console.log(`[DEBUG] Cannot charge: not on ground`);
+        } else if (this.isCharging) {
+          console.log(`[DEBUG] Cannot charge: already charging`);
+        } else if (!this.canJump) {
+          console.log(`[DEBUG] Cannot charge: cooldown active`);
+        }
       }
     }
   }
@@ -434,6 +459,11 @@ class Player extends GameObject {
                 // this.currentTile = tile;
                 this.groundCheckCooldown = 0;
                 hitGround = true;
+
+                // (это исправляет случай когда игрок держал пробел во время полета)
+                if (this.lastInput && !this.lastInput.space) {
+                  this.spaceReleased = true;
+                }
   
                 // Обработка приземления
                 if (!wasOnGround) {

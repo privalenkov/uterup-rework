@@ -195,6 +195,11 @@ if (cluster.isMaster || cluster.isPrimary) {
       
       if (!success) {
         socket.emit('join_failed', { reason: 'Could not join any lobby' });
+        
+        // Отключаем игрока через небольшую задержку
+        setTimeout(() => {
+          socket.disconnect(true);
+        }, 1000);
       }
     });
 

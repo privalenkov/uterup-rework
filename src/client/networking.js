@@ -32,8 +32,19 @@ export const connect = () => (
       window.location.reload();
     });
     
-    socket.on('server_full', () => {
-      alert('All lobbies are full! Please try again later.');
+    socket.on('server_full', (data) => {
+      alert(`Server is full! (${data.currentPlayers}/${data.maxPlayers} players)\nPlease try again later.`);
+      window.location.reload();
+    });
+    
+    // НОВОЕ: Обработка переполнения лобби
+    socket.on('lobby_full', (data) => {
+      alert(`Lobby is full! (${data.players}/${data.maxPlayers} players)\nTrying another lobby...`);
+    });
+    
+    // НОВОЕ: Обработка переполнения игры
+    socket.on('game_full', (data) => {
+      alert('Game is full! Please try again later.');
       window.location.reload();
     });
   })

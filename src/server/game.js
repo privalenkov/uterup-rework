@@ -18,13 +18,25 @@ class Game {
   }
 
   addPlayer(socket, username) {
+    // ИСПРАВЛЕНИЕ: Проверяем лимит и отправляем сообщение если полно
     if (Object.keys(this.players).length >= Constants.PLAYER_MAX_COUNT) {
+      socket.emit('server_full', { 
+        message: 'Server is full',
+        currentPlayers: Object.keys(this.players).length,
+        maxPlayers: Constants.PLAYER_MAX_COUNT
+      });
+      
+      // Отключаем сокет через небольшую задержку
+      setTimeout(() => {
+        socket.disconnect(true);
+      }, 100);
+      
       return null;
     }
-
+  
     this.sockets[socket.id] = socket;
     this.inputs[socket.id] = { left: false, right: false, space: false };
-
+  
     const startX = 5 * Constants.TILE_SIZE;
     const startY = (Constants.MAP_HEIGHT - 3) * Constants.TILE_SIZE - Constants.PLAYER_HEIGHT;
     
