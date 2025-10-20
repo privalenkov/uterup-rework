@@ -65,6 +65,9 @@ class Player extends GameObject {
         this.highestPointY = this.y; // Обновляем самую высокую точку
       }
     }
+
+    const previousTile = this.currentTile;
+    this.currentTile = this.getCurrentGroundTile(map);
   
     // КРИТИЧЕСКИ ВАЖНО: Обновляем направление прыжка ПЕРЕД зарядкой
     if (this.isCharging && this.isOnGround) {
@@ -156,6 +159,11 @@ class Player extends GameObject {
     this.handleVerticalCollisions(map);
   
     this.x = Math.max(0, Math.min(this.x, Constants.MAP_WIDTH * Constants.TILE_SIZE - this.width));
+
+    if (this.currentTile === Constants.TILE_TYPES.FINISH && !this.finishTime) {
+      this.finishTime = Date.now();
+      this.averageJumps = this.jumpCount;
+    }
   }
 
   handleInput(input, prevInput) {
@@ -371,7 +379,7 @@ class Player extends GameObject {
                 stillOnGround = true;
                 this.y = tileTop - this.height;
                 this.velocityY = 0;
-                this.currentTile = tile;
+                // this.currentTile = tile;
                 break;
               }
             }
@@ -408,7 +416,7 @@ class Player extends GameObject {
                 this.y = tileTop - this.height;
                 this.velocityY = 0;
                 this.isOnGround = true;
-                this.currentTile = tile;
+                // this.currentTile = tile;
                 this.groundCheckCooldown = 0;
                 hitGround = true;
   
@@ -440,10 +448,10 @@ class Player extends GameObject {
                 }
   
                 // Финиш
-                if (tile === Constants.TILE_TYPES.FINISH && !this.finishTime) {
-                  this.finishTime = Date.now();
-                  this.averageJumps = this.jumpCount;
-                }
+                // if (tile === Constants.TILE_TYPES.FINISH && !this.finishTime) {
+                //   this.finishTime = Date.now();
+                //   this.averageJumps = this.jumpCount;
+                // }
                 
                 break;
               }
@@ -493,6 +501,49 @@ class Player extends GameObject {
         }
       }
     }
+  }
+
+  // Определяет тип тайла под ногами игрока
+  getCurrentGroundTile(map) {
+    if (!this.isOnGround) {
+      return Constants.TILE_TYPES.EMPTY;
+    }
+
+    const left = this.x + 1;
+    const right = this.x + this.width - 1;
+    const bottom = this.y + this.height;
+
+    const leftTileX = Math.floor(left / Constants.TILE_SIZE);
+    const rightTileX = Math.floor(right / Constants.TILE_SIZE);
+    const bottomTileY = Math.floor(bottom / Constants.TILE_SIZE);
+
+    // ПРИОРИТЕТ: Ищем особые блоки (лед, снег, горка, финиш) в первую очередь
+    const specialTiles = [
+      Constants.TILE_TYPES.FINISH,
+      Constants.TILE_TYPES.SLOPE,
+      Constants.TILE_TYPES.SNOW,
+      Constants.TILE_TYPES.ICE
+    ];
+
+    // Проверяем все тайлы под ногами
+    for (let x = leftTileX; x <= rightTileX; x++) {
+      const tile = this.getTile(map, x, bottomTileY);
+      
+      // Если нашли особый блок - возвращаем его сразу
+      if (specialTiles.includes(tile)) {
+        return tile;
+      }
+    }
+
+    // Если особых блоков нет, возвращаем любой твердый блок
+    for (let x = leftTileX; x <= rightTileX; x++) {
+      const tile = this.getTile(map, x, bottomTileY);
+      if (tile !== Constants.TILE_TYPES.EMPTY) {
+        return tile;
+      }
+    }
+
+    return Constants.TILE_TYPES.EMPTY;
   }
 
   getTile(map, x, y) {
