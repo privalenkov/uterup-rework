@@ -46,7 +46,8 @@ function renderMap(map) {
     [Constants.TILE_TYPES.SOLID]: '#8B4513',
     [Constants.TILE_TYPES.ICE]: '#87CEEB',
     [Constants.TILE_TYPES.SNOW]: '#FFFAFA',
-    [Constants.TILE_TYPES.SLOPE]: '#FF6347',
+    [Constants.TILE_TYPES.SLOPE_LEFT]: '#FF6347',  // Красный для горки влево
+    [Constants.TILE_TYPES.SLOPE_RIGHT]: '#FF8C00',
     [Constants.TILE_TYPES.FINISH]: '#FFD700'
   };
 
@@ -73,6 +74,26 @@ function renderMap(map) {
           Constants.TILE_SIZE,
           Constants.TILE_SIZE
         );
+
+        if (tileType === Constants.TILE_TYPES.SLOPE_LEFT) {
+          context.fillStyle = '#FFF';
+          context.font = 'bold 20px Arial';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText('◣', 
+            x * Constants.TILE_SIZE + Constants.TILE_SIZE / 2,
+            y * Constants.TILE_SIZE + Constants.TILE_SIZE / 2
+          );
+        } else if (tileType === Constants.TILE_TYPES.SLOPE_RIGHT) {
+          context.fillStyle = '#FFF';
+          context.font = 'bold 20px Arial';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText('◢', 
+            x * Constants.TILE_SIZE + Constants.TILE_SIZE / 2,
+            y * Constants.TILE_SIZE + Constants.TILE_SIZE / 2
+          );
+        }
       }
     }
   }

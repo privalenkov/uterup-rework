@@ -187,8 +187,8 @@ class MapGenerator {
           if (this.rng() < obstacleProbability) {
             const obstacleType = this.rng();
             
-            if (obstacleType < 0.45) {
-              // Лед (45%)
+            if (obstacleType < 0.40) {
+              // 40% - Лед
               this.map[y][x] = Constants.TILE_TYPES.ICE;
               
               // Иногда цепочка льда
@@ -200,8 +200,8 @@ class MapGenerator {
                   }
                 }
               }
-            } else if (obstacleType < 0.70) {
-              // Снег (25%)
+            } else if (obstacleType < 0.65) {
+              // 25% - Снег
               this.map[y][x] = Constants.TILE_TYPES.SNOW;
               
               // Иногда группа снега
@@ -213,10 +213,15 @@ class MapGenerator {
                   }
                 }
               }
-            } else if (obstacleType < 0.85) {
-              // Горка (15%)
-              if (this.canPlaceSlope(x, y)) {
-                this.placeSlope(x, y);
+            } else if (obstacleType < 0.82) {
+              // 17% - Горка влево
+              if (this.canPlaceSlopeLeft(x, y)) {
+                this.placeSlopeLeft(x, y);
+              }
+            } else if (obstacleType < 0.99) {
+              // 17% - Горка вправо
+              if (this.canPlaceSlopeRight(x, y)) {
+                this.placeSlopeRight(x, y);
               }
             }
           }
@@ -225,20 +230,31 @@ class MapGenerator {
     }
   }
 
-  canPlaceSlope(x, y) {
-    if (x >= this.width - 4 || y <= 5) return false;
+  // Проверка возможности размещения горки ВЛЕВО (◣)
+  canPlaceSlopeLeft(x, y) {
+    // Нужно место слева и выше (диагональ влево-вверх)
+    if (x < 3 || y <= 5) return false;
     
-    // Проверяем место для горки (3 блока по диагонали)
+    // Проверяем что слева и выше есть место для диагонали
     for (let i = 0; i < 3; i++) {
-      if (this.map[y - i][x + i] !== Constants.TILE_TYPES.SOLID &&
-          this.map[y - i][x + i] !== Constants.TILE_TYPES.EMPTY) {
+      const checkX = x - i;
+      const checkY = y - i;
+      
+      if (checkX < 1 || checkY < 0) return false;
+      
+      // Проверяем что этот блок либо пустой, либо твердый (можем заменить)
+      const tile = this.map[checkY][checkX];
+      if (tile !== Constants.TILE_TYPES.EMPTY && tile !== Constants.TILE_TYPES.SOLID) {
         return false;
       }
     }
     
-    // Проверяем что над горкой есть место
+    // Проверяем что над горкой есть место (3 блока)
     for (let i = 0; i < 3; i++) {
-      if (y - i - 1 >= 0 && this.map[y - i - 1][x + i] !== Constants.TILE_TYPES.EMPTY) {
+      const checkX = x - i;
+      const checkY = y - i - 1;
+      
+      if (checkY >= 0 && this.map[checkY][checkX] !== Constants.TILE_TYPES.EMPTY) {
         return false;
       }
     }
@@ -246,16 +262,63 @@ class MapGenerator {
     return true;
   }
 
-  placeSlope(startX, startY) {
-    // Горка: 3 блока по диагонали вверх-вправо
-    this.map[startY][startX] = Constants.TILE_TYPES.SLOPE;
+  // Размещение горки ВЛЕВО (◣)
+  placeSlopeLeft(startX, startY) {
+    // Горка: 3 блока по диагонали влево-вверх
+    this.map[startY][startX] = Constants.TILE_TYPES.SLOPE_LEFT;
+    
+    if (startX - 1 >= 1 && startY - 1 >= 0) {
+      this.map[startY - 1][startX - 1] = Constants.TILE_TYPES.SLOPE_LEFT;
+    }
+    
+    if (startX - 2 >= 1 && startY - 2 >= 0) {
+      this.map[startY - 2][startX - 2] = Constants.TILE_TYPES.SLOPE_LEFT;
+    }
+  }
+
+  // Проверка возможности размещения горки ВПРАВО (◢)
+  canPlaceSlopeRight(x, y) {
+    // Нужно место справа и выше (диагональ вправо-вверх)
+    if (x >= this.width - 4 || y <= 5) return false;
+    
+    // Проверяем что справа и выше есть место для диагонали
+    for (let i = 0; i < 3; i++) {
+      const checkX = x + i;
+      const checkY = y - i;
+      
+      if (checkX >= this.width - 1 || checkY < 0) return false;
+      
+      // Проверяем что этот блок либо пустой, либо твердый (можем заменить)
+      const tile = this.map[checkY][checkX];
+      if (tile !== Constants.TILE_TYPES.EMPTY && tile !== Constants.TILE_TYPES.SOLID) {
+        return false;
+      }
+    }
+    
+    // Проверяем что над горкой есть место (3 блока)
+    for (let i = 0; i < 3; i++) {
+      const checkX = x + i;
+      const checkY = y - i - 1;
+      
+      if (checkY >= 0 && this.map[checkY][checkX] !== Constants.TILE_TYPES.EMPTY) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  // Размещение горки ВПРАВО (◢)
+  placeSlopeRight(startX, startY) {
+    // Горка: 3 блока по диагонали вправо-вверх
+    this.map[startY][startX] = Constants.TILE_TYPES.SLOPE_RIGHT;
     
     if (startX + 1 < this.width - 1 && startY - 1 >= 0) {
-      this.map[startY - 1][startX + 1] = Constants.TILE_TYPES.SLOPE;
+      this.map[startY - 1][startX + 1] = Constants.TILE_TYPES.SLOPE_RIGHT;
     }
     
     if (startX + 2 < this.width - 1 && startY - 2 >= 0) {
-      this.map[startY - 2][startX + 2] = Constants.TILE_TYPES.SLOPE;
+      this.map[startY - 2][startX + 2] = Constants.TILE_TYPES.SLOPE_RIGHT;
     }
   }
 

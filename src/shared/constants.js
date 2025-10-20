@@ -29,7 +29,8 @@ module.exports = Object.freeze({
     SOLID: 1,
     ICE: 2,
     SNOW: 3,
-    SLOPE: 4,
+    SLOPE_LEFT: 4,  // Горка влево (скатывает влево) ◣
+    SLOPE_RIGHT: 5,
     FINISH: 5
   },
 

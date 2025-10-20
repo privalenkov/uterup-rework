@@ -137,8 +137,18 @@ class Player extends GameObject {
     }
   
     // Скатывание с горки
-    if (this.currentTile === Constants.TILE_TYPES.SLOPE && this.isOnGround) {
-      this.velocityX = Constants.SLOPE_SLIDE_SPEED;
+    if (this.currentTile === Constants.TILE_TYPES.SLOPE_LEFT && this.isOnGround) {
+      this.velocityX = -Constants.SLOPE_SLIDE_SPEED; // Влево (отрицательная скорость)
+      this.velocityY = Constants.SLOPE_SLIDE_SPEED;
+      this.isOnGround = false;
+      this.isCharging = false;
+      this.jumpCharge = 0;
+      this.groundCheckCooldown = 5;
+    }
+    
+    // Скатывание с горки ВПРАВО
+    if (this.currentTile === Constants.TILE_TYPES.SLOPE_RIGHT && this.isOnGround) {
+      this.velocityX = Constants.SLOPE_SLIDE_SPEED; // Вправо (положительная скорость)
       this.velocityY = Constants.SLOPE_SLIDE_SPEED;
       this.isOnGround = false;
       this.isCharging = false;
@@ -412,6 +422,11 @@ class Player extends GameObject {
               
               // Если мы пересекли верхнюю границу тайла
               if (newBottom >= tileTop) {
+
+                const playerCenterX = this.x + this.width / 2;
+                if (!this.isSlopeTilePassable(tile, playerCenterX, x, newBottomTileY, map)) {
+                  continue; // Пропускаем этот тайл, ищем дальше
+                }
                 // Ставим точно на платформу
                 this.y = tileTop - this.height;
                 this.velocityY = 0;
@@ -439,7 +454,7 @@ class Player extends GameObject {
                     this.velocityX *= 0.9;
                   } else if (tile === Constants.TILE_TYPES.SNOW) {
                     this.velocityX = 0;
-                  } else if (tile !== Constants.TILE_TYPES.SLOPE) {
+                  } else if (tile !== Constants.TILE_TYPES.SLOPE_LEFT && tile !== Constants.TILE_TYPES.SLOPE_RIGHT) {
                     this.velocityX *= 0.4;
                     if (Math.abs(this.velocityX) < 0.3) {
                       this.velocityX = 0;
@@ -503,6 +518,37 @@ class Player extends GameObject {
     }
   }
 
+  // Проверяет является ли тайл горкой и можно ли на него встать
+  isSlopeTilePassable(tile, fromX, tileX, tileY, map) {
+    if (tile === Constants.TILE_TYPES.SLOPE_LEFT) {
+      // Горка влево (◣) непроходима справа и снизу
+      // Можно встать только если подходим слева или сверху
+      
+      // Если игрок справа от тайла - непроходим
+      const tileRight = (tileX + 1) * Constants.TILE_SIZE;
+      if (fromX > tileRight - Constants.TILE_SIZE * 0.5) {
+        return false; // Непроходим справа
+      }
+      
+      return true; // Проходим слева/сверху
+    }
+    
+    if (tile === Constants.TILE_TYPES.SLOPE_RIGHT) {
+      // Горка вправо (◢) непроходима слева и снизу
+      // Можно встать только если подходим справа или сверху
+      
+      // Если игрок слева от тайла - непроходим
+      const tileLeft = tileX * Constants.TILE_SIZE;
+      if (fromX < tileLeft + Constants.TILE_SIZE * 0.5) {
+        return false; // Непроходим слева
+      }
+      
+      return true; // Проходим справа/сверху
+    }
+    
+    return true; // Не горка - проходим
+  }
+
   // Определяет тип тайла под ногами игрока
   getCurrentGroundTile(map) {
     if (!this.isOnGround) {
@@ -520,9 +566,10 @@ class Player extends GameObject {
     // ПРИОРИТЕТ: Ищем особые блоки (лед, снег, горка, финиш) в первую очередь
     const specialTiles = [
       Constants.TILE_TYPES.FINISH,
-      Constants.TILE_TYPES.SLOPE,
       Constants.TILE_TYPES.SNOW,
-      Constants.TILE_TYPES.ICE
+      Constants.TILE_TYPES.ICE,
+      Constants.TILE_TYPES.SLOPE_LEFT,
+      Constants.TILE_TYPES.SLOPE_RIGHT
     ];
 
     // Проверяем все тайлы под ногами
