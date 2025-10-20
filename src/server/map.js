@@ -15,6 +15,9 @@ class MapGenerator {
         this.map[y][x] = Constants.TILE_TYPES.EMPTY;
       }
     }
+    
+    // Гарантированный путь
+    this.guaranteedPath = [];
   }
 
   seededRandom(seed) {
@@ -29,28 +32,84 @@ class MapGenerator {
     return Math.floor(this.rng() * (max - min + 1)) + min;
   }
 
+  // Используем РЕАЛЬНУЮ физику из player.js для расчета прыжка
+  calculateJump(jumpPower, jumpDirection) {
+    // Из player.js:
+    const chargeRatio = (jumpPower - Constants.JUMP_MIN_POWER) / 
+                        (Constants.JUMP_MAX_POWER - Constants.JUMP_MIN_POWER);
+    
+    let angle;
+    
+    if (jumpDirection === 0) {
+      // Прямо вверх - 90 градусов
+      angle = Math.PI / 2;
+    } else {
+      // Диагональный прыжок - угол от 45° до 72°
+      const minAngle = 45;
+      const maxAngle = 72;
+      const angleDegrees = minAngle + (maxAngle - minAngle) * chargeRatio;
+      angle = (angleDegrees * Math.PI) / 180;
+    }
+    
+    // Разложение скорости (из player.js)
+    const velocityY = -jumpPower * Math.sin(angle);
+    const horizontalComponent = jumpPower * Math.cos(angle);
+    const velocityX = horizontalComponent * jumpDirection;
+    
+    // Рассчитываем дальность с учетом гравитации
+    const gravity = Constants.GRAVITY;
+    
+    // Максимальная высота: h = velocityY^2 / (2 * gravity)
+    const maxHeight = (velocityY * velocityY) / (2 * gravity);
+    
+    // Время полета: t = 2 * velocityY / gravity
+    const timeInAir = (2 * Math.abs(velocityY)) / gravity;
+    
+    // Горизонтальная дальность: d = velocityX * time
+    const horizontalDistance = Math.abs(velocityX) * timeInAir;
+    
+    return {
+      height: maxHeight / Constants.TILE_SIZE,
+      distance: horizontalDistance / Constants.TILE_SIZE,
+      direction: jumpDirection
+    };
+  }
+
   // Основная функция генерации
   generate() {
+    console.log('🗺️  Map Generation Started');
+    console.log('═══════════════════════════════════════\n');
+    
+    // Рассчитываем возможности прыжков
+    console.log('📊 Jump Physics (from player.js):');
+    
+    const minJump = this.calculateJump(Constants.JUMP_MIN_POWER, 1);
+    const midJump = this.calculateJump(24, 1);
+    const maxJump = this.calculateJump(Constants.JUMP_MAX_POWER, 1);
+    const maxJumpUp = this.calculateJump(Constants.JUMP_MAX_POWER, 0);
+    
+    console.log(`   Min (power=${Constants.JUMP_MIN_POWER}): ↑${minJump.height.toFixed(1)} →${minJump.distance.toFixed(1)} tiles`);
+    console.log(`   Mid (power=24): ↑${midJump.height.toFixed(1)} →${midJump.distance.toFixed(1)} tiles`);
+    console.log(`   Max (power=${Constants.JUMP_MAX_POWER}): ↑${maxJump.height.toFixed(1)} →${maxJump.distance.toFixed(1)} tiles`);
+    console.log(`   Max UP (power=${Constants.JUMP_MAX_POWER}): ↑${maxJumpUp.height.toFixed(1)} tiles\n`);
+    
     // 1. Границы
     this.createBorders();
     
-    // 2. Стартовая платформа
-    this.createStartPlatform();
+    // 2. Генерируем путь снизу вверх
+    this.generatePath();
     
-    // 3. Генерируем ПУТЬ снизу вверх (гарантия проходимости)
-    const path = this.generatePath();
+    // 3. Размещаем платформы
+    this.placePlatforms();
     
-    // 4. Размещаем платформы по пути
-    this.placePlatformsAlongPath(path);
+    // 4. Финиш
+    this.createFinish();
     
-    // 5. Добавляем дополнительные платформы (альтернативные пути)
-    this.addExtraPlatforms(path);
-    
-    // 6. Добавляем препятствия
+    // 5. Препятствия
     this.addObstacles();
     
-    // 7. Финиш
-    this.createFinish();
+    console.log('═══════════════════════════════════════');
+    console.log('✅ Map Generation Complete\n');
     
     return this.map;
   }
@@ -66,264 +125,104 @@ class MapGenerator {
     }
   }
 
-  createStartPlatform() {
-    const startY = this.height - 3;
-    for (let x = 1; x < this.width - 1; x++) {
-      this.map[startY][x] = Constants.TILE_TYPES.SOLID;
-    }
-  }
-
-  // Генерация ГАРАНТИРОВАННОГО пути
+  // Генерация пути с использованием реальной физики
   generatePath() {
-    const path = [];
+    console.log('🛤️  Generating Path:\n');
     
-    // Стартовая точка
-    let currentX = Math.floor(this.width / 2);
-    let currentY = this.height - 3;
+    // Стартовая платформа
+    const startY = this.height - 3;
+    const startX = Math.floor(this.width / 2);
     
-    path.push({ x: currentX, y: currentY, width: 6 });
+    this.guaranteedPath.push({
+      x: startX,
+      y: startY,
+      width: 10,
+      type: 'start'
+    });
     
-    // Параметры прыжка (консервативные для гарантии проходимости)
-    const jumpParams = {
-      minVertical: 3,    // Минимальный прыжок вверх
-      maxVertical: 8,    // Максимальный прыжок вверх (консервативно)
-      maxHorizontal: 4   // Максимальная горизонталь (консервативно)
-    };
+    let currentX = startX;
+    let currentY = startY;
+    let stepCount = 0;
     
-    // Идем снизу вверх
-    while (currentY > 10) {
-      // Определяем следующую платформу
-      const verticalJump = this.random(jumpParams.minVertical, jumpParams.maxVertical);
-      const nextY = currentY - verticalJump;
+    // Генерируем путь снизу вверх
+    while (currentY > 15) {
+      stepCount++;
       
-      if (nextY < 5) break;
+      // Выбираем случайную силу прыжка (15-32 для безопасности)
+      const jumpPower = this.random(15, 32);
       
-      // Горизонтальное смещение (может быть влево или вправо)
-      const direction = this.rng() < 0.5 ? -1 : 1;
-      const horizontalJump = this.random(1, jumpParams.maxHorizontal);
-      let nextX = currentX + (direction * horizontalJump);
+      // Выбираем направление: 0=вверх, -1=влево, 1=вправо
+      const rand = this.rng();
+      let jumpDirection;
+      if (rand < 0.35) {
+        jumpDirection = -1; // Влево
+      } else if (rand < 0.70) {
+        jumpDirection = 1; // Вправо
+      } else {
+        jumpDirection = 0; // Вверх
+      }
+      
+      // Рассчитываем РЕАЛЬНЫЙ прыжок
+      const jump = this.calculateJump(jumpPower, jumpDirection);
+      
+      // Следующая позиция
+      const nextY = Math.floor(currentY - jump.height * 0.8); // 80% от высоты для безопасности
+      const nextXOffset = Math.floor(jump.distance * 0.7 * jumpDirection); // 70% от дальности
+      let nextX = currentX + nextXOffset;
       
       // Ограничиваем границами
-      nextX = Math.max(3, Math.min(nextX, this.width - 8));
+      nextX = Math.max(6, Math.min(nextX, this.width - 8));
       
-      // Размер платформы (чем выше, тем меньше)
-      const progress = (this.height - nextY) / this.height;
-      const platformWidth = Math.max(3, Math.floor(8 - progress * 4));
+      // Размер платформы
+      const platformWidth = this.random(5, 8);
       
-      path.push({
+      this.guaranteedPath.push({
         x: nextX,
         y: nextY,
-        width: platformWidth
+        width: platformWidth,
+        type: 'platform',
+        jumpPower: jumpPower,
+        jumpDirection: jumpDirection
       });
+      
+      const actualVertical = currentY - nextY;
+      const actualHorizontal = Math.abs(nextX - currentX);
+      
+      console.log(`   ${stepCount}. (${currentX},${currentY}) → (${nextX},${nextY})`);
+      console.log(`      Power=${jumpPower}, Dir=${jumpDirection === 0 ? 'UP' : jumpDirection === -1 ? 'LEFT' : 'RIGHT'}`);
+      console.log(`      Jump: ↑${actualVertical} →${actualHorizontal} tiles, Platform width: ${platformWidth}\n`);
       
       currentX = nextX;
       currentY = nextY;
+      
+      if (nextY < 15) break;
     }
     
-    // Финишная платформа
-    path.push({
-      x: Math.floor(this.width / 2) - 3,
-      y: 3,
-      width: 7
-    });
-    
-    return path;
+    console.log(`   Total: ${stepCount} platforms\n`);
   }
 
-  // Размещаем платформы по пути
-  placePlatformsAlongPath(path) {
-    for (const platform of path) {
-      for (let x = platform.x; x < platform.x + platform.width; x++) {
+  placePlatforms() {
+    console.log('🏗️  Placing Platforms:\n');
+    
+    for (let i = 0; i < this.guaranteedPath.length; i++) {
+      const point = this.guaranteedPath[i];
+      const startX = point.x - Math.floor(point.width / 2);
+      const endX = startX + point.width - 1;
+      
+      for (let x = startX; x <= endX; x++) {
         if (x >= 1 && x < this.width - 1) {
-          this.map[platform.y][x] = Constants.TILE_TYPES.SOLID;
-        }
-      }
-    }
-  }
-
-  // Добавляем дополнительные платформы (не на главном пути)
-  addExtraPlatforms(mainPath) {
-    const numExtraPlatforms = this.random(15, 25);
-    
-    for (let i = 0; i < numExtraPlatforms; i++) {
-      const y = this.random(10, this.height - 10);
-      const x = this.random(3, this.width - 8);
-      const width = this.random(2, 5);
-      
-      // Проверяем что не пересекается с главным путем
-      let tooClose = false;
-      for (const pathPlatform of mainPath) {
-        if (Math.abs(pathPlatform.y - y) < 3 && 
-            Math.abs(pathPlatform.x - x) < 5) {
-          tooClose = true;
-          break;
+          this.map[point.y][x] = Constants.TILE_TYPES.SOLID;
         }
       }
       
-      if (!tooClose) {
-        // Размещаем дополнительную платформу
-        for (let px = x; px < x + width && px < this.width - 1; px++) {
-          if (this.map[y][px] === Constants.TILE_TYPES.EMPTY) {
-            this.map[y][px] = Constants.TILE_TYPES.SOLID;
-          }
-        }
-      }
-    }
-  }
-
-  // Добавление препятствий
-  addObstacles() {
-    for (let y = this.height - 10; y > 10; y--) {
-      for (let x = 1; x < this.width - 1; x++) {
-        // Если это твердый блок и над ним пусто
-        if (this.map[y][x] === Constants.TILE_TYPES.SOLID && 
-            this.map[y - 1][x] === Constants.TILE_TYPES.EMPTY) {
-          
-          const zoneHeight = this.height - y;
-          
-          // Вероятность препятствий (20% базовая, растет с высотой)
-          const obstacleProbability = Math.min(0.35, 0.15 + (zoneHeight / 300));
-          
-          if (this.rng() < obstacleProbability) {
-            const obstacleType = this.rng();
-            
-            if (obstacleType < 0.40) {
-              // 40% - Лед
-              this.map[y][x] = Constants.TILE_TYPES.ICE;
-              
-              // Иногда цепочка льда
-              if (this.rng() < 0.4 && x < this.width - 3) {
-                const iceLength = this.random(1, 3);
-                for (let i = 1; i <= iceLength && x + i < this.width - 1; i++) {
-                  if (this.map[y][x + i] === Constants.TILE_TYPES.SOLID) {
-                    this.map[y][x + i] = Constants.TILE_TYPES.ICE;
-                  }
-                }
-              }
-            } else if (obstacleType < 0.65) {
-              // 25% - Снег
-              this.map[y][x] = Constants.TILE_TYPES.SNOW;
-              
-              // Иногда группа снега
-              if (this.rng() < 0.3 && x < this.width - 2) {
-                const snowLength = this.random(1, 2);
-                for (let i = 1; i <= snowLength && x + i < this.width - 1; i++) {
-                  if (this.map[y][x + i] === Constants.TILE_TYPES.SOLID) {
-                    this.map[y][x + i] = Constants.TILE_TYPES.SNOW;
-                  }
-                }
-              }
-            } else if (obstacleType < 0.82) {
-              // 17% - Горка влево
-              if (this.canPlaceSlopeLeft(x, y)) {
-                this.placeSlopeLeft(x, y);
-              }
-            } else if (obstacleType < 0.99) {
-              // 17% - Горка вправо
-              if (this.canPlaceSlopeRight(x, y)) {
-                this.placeSlopeRight(x, y);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Проверка возможности размещения горки ВЛЕВО (◣)
-  canPlaceSlopeLeft(x, y) {
-    // Нужно место слева и выше (диагональ влево-вверх)
-    if (x < 3 || y <= 5) return false;
-    
-    // Проверяем что слева и выше есть место для диагонали
-    for (let i = 0; i < 3; i++) {
-      const checkX = x - i;
-      const checkY = y - i;
-      
-      if (checkX < 1 || checkY < 0) return false;
-      
-      // Проверяем что этот блок либо пустой, либо твердый (можем заменить)
-      const tile = this.map[checkY][checkX];
-      if (tile !== Constants.TILE_TYPES.EMPTY && tile !== Constants.TILE_TYPES.SOLID) {
-        return false;
-      }
+      console.log(`   ${point.type} at Y=${point.y}, X=${startX}-${endX}`);
     }
     
-    // Проверяем что над горкой есть место (3 блока)
-    for (let i = 0; i < 3; i++) {
-      const checkX = x - i;
-      const checkY = y - i - 1;
-      
-      if (checkY >= 0 && this.map[checkY][checkX] !== Constants.TILE_TYPES.EMPTY) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-
-  // Размещение горки ВЛЕВО (◣)
-  placeSlopeLeft(startX, startY) {
-    // Горка: 3 блока по диагонали влево-вверх
-    this.map[startY][startX] = Constants.TILE_TYPES.SLOPE_LEFT;
-    
-    if (startX - 1 >= 1 && startY - 1 >= 0) {
-      this.map[startY - 1][startX - 1] = Constants.TILE_TYPES.SLOPE_LEFT;
-    }
-    
-    if (startX - 2 >= 1 && startY - 2 >= 0) {
-      this.map[startY - 2][startX - 2] = Constants.TILE_TYPES.SLOPE_LEFT;
-    }
-  }
-
-  // Проверка возможности размещения горки ВПРАВО (◢)
-  canPlaceSlopeRight(x, y) {
-    // Нужно место справа и выше (диагональ вправо-вверх)
-    if (x >= this.width - 4 || y <= 5) return false;
-    
-    // Проверяем что справа и выше есть место для диагонали
-    for (let i = 0; i < 3; i++) {
-      const checkX = x + i;
-      const checkY = y - i;
-      
-      if (checkX >= this.width - 1 || checkY < 0) return false;
-      
-      // Проверяем что этот блок либо пустой, либо твердый (можем заменить)
-      const tile = this.map[checkY][checkX];
-      if (tile !== Constants.TILE_TYPES.EMPTY && tile !== Constants.TILE_TYPES.SOLID) {
-        return false;
-      }
-    }
-    
-    // Проверяем что над горкой есть место (3 блока)
-    for (let i = 0; i < 3; i++) {
-      const checkX = x + i;
-      const checkY = y - i - 1;
-      
-      if (checkY >= 0 && this.map[checkY][checkX] !== Constants.TILE_TYPES.EMPTY) {
-        return false;
-      }
-    }
-    
-    return true;
-  }
-
-  // Размещение горки ВПРАВО (◢)
-  placeSlopeRight(startX, startY) {
-    // Горка: 3 блока по диагонали вправо-вверх
-    this.map[startY][startX] = Constants.TILE_TYPES.SLOPE_RIGHT;
-    
-    if (startX + 1 < this.width - 1 && startY - 1 >= 0) {
-      this.map[startY - 1][startX + 1] = Constants.TILE_TYPES.SLOPE_RIGHT;
-    }
-    
-    if (startX + 2 < this.width - 1 && startY - 2 >= 0) {
-      this.map[startY - 2][startX + 2] = Constants.TILE_TYPES.SLOPE_RIGHT;
-    }
+    console.log('');
   }
 
   createFinish() {
-    const finishY = 1;
+    const finishY = 5;
     const finishX = Math.floor(this.width / 2) - 3;
     
     // Финишная платформа
@@ -333,24 +232,84 @@ class MapGenerator {
       }
     }
     
-    // Декоративные стены
+    // Стены
     for (let y = finishY - 2; y <= finishY + 1; y++) {
       if (y >= 0 && y < this.height) {
         this.map[y][finishX - 1] = Constants.TILE_TYPES.SOLID;
         this.map[y][finishX + 7] = Constants.TILE_TYPES.SOLID;
       }
     }
+    
+    console.log('🏁 Finish placed at Y=5\n');
+  }
+
+  addObstacles() {
+    console.log('🧊 Adding Obstacles:\n');
+    
+    let iceCount = 0;
+    let snowCount = 0;
+    
+    // Проходим по всем блокам
+    for (let y = this.height - 10; y > 10; y--) {
+      for (let x = 2; x < this.width - 2; x++) {
+        if (this.map[y][x] === Constants.TILE_TYPES.SOLID && 
+            this.map[y - 1][x] === Constants.TILE_TYPES.EMPTY) {
+          
+          // Не трогаем стартовую платформу
+          if (y === this.height - 3) continue;
+          
+          const zoneHeight = this.height - y;
+          const probability = Math.min(0.10, 0.03 + (zoneHeight / 800));
+          
+          if (this.rng() < probability) {
+            const type = this.rng();
+            
+            if (type < 0.5) {
+              // Лед (ровно 3 блока)
+              if (this.placeObstacle(x, y, 3, Constants.TILE_TYPES.ICE)) {
+                iceCount++;
+                x += 2; // Пропускаем размещенные блоки
+              }
+            } else {
+              // Снег (ровно 3 блока)
+              if (this.placeObstacle(x, y, 3, Constants.TILE_TYPES.SNOW)) {
+                snowCount++;
+                x += 2;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    console.log(`   Ice patches: ${iceCount}`);
+    console.log(`   Snow patches: ${snowCount}\n`);
+  }
+
+  placeObstacle(startX, y, length, type) {
+    // Проверяем что есть место для всех блоков
+    for (let i = 0; i < length; i++) {
+      const x = startX + i;
+      if (x >= this.width - 1 || this.map[y][x] !== Constants.TILE_TYPES.SOLID) {
+        return false;
+      }
+    }
+    
+    // Размещаем препятствие
+    for (let i = 0; i < length; i++) {
+      this.map[y][startX + i] = type;
+    }
+    
+    return true;
   }
 }
 
-// Экспортируем функцию генерации
 function generateMap(seed) {
   const generator = new MapGenerator(seed);
   const map = generator.generate();
   
-  console.log('🗺️  Generated procedural map');
-  console.log(`   Seed: ${generator.seed}`);
-  console.log(`   Size: ${Constants.MAP_WIDTH}x${Constants.MAP_HEIGHT}`);
+  console.log(`Seed: ${generator.seed}`);
+  console.log(`Path length: ${generator.guaranteedPath.length} platforms`);
   
   return map;
 }

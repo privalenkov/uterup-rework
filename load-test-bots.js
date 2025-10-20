@@ -1,6 +1,7 @@
 // load-test-bots.js
 const io = require('socket.io-client');
 
+// const SERVER_URL = 'http://localhost:3000';
 const SERVER_URL = 'https://uterup-testwer-privalenkov.amvera.io';
 const BOT_COUNT = 100;
 

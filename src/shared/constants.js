@@ -6,7 +6,7 @@ module.exports = Object.freeze({
     PLAYER_FINISH: 'player_finish'
   },
 
-  PLAYER_WIDTH: 32,
+  PLAYER_WIDTH: 26,
   PLAYER_HEIGHT: 48,
   PLAYER_WALK_SPEED: 5,
   
