@@ -34,6 +34,8 @@ body {
   border: 2px solid #00d4ff;
   max-width: 500px;
   width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 #play-menu h1 {
@@ -47,8 +49,49 @@ body {
 #play-menu p {
   color: #fff;
   font-size: 18px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   opacity: 0.9;
+}
+
+/* Информация о карте */
+.map-info {
+  background: rgba(0, 212, 255, 0.1);
+  border: 2px solid #00d4ff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.map-number {
+  color: #00d4ff;
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.map-author {
+  color: #00ff88;
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.map-average {
+  color: #fff;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Сообщение об ошибке */
+.error-message {
+  background: rgba(255, 69, 58, 0.2);
+  border: 2px solid #ff453a;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #ff453a;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 #username-input {
@@ -90,13 +133,18 @@ body {
   box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
 }
 
-#play-button:hover {
+#play-button:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 8px 30px rgba(0, 212, 255, 0.6);
 }
 
-#play-button:active {
+#play-button:active:not(:disabled) {
   transform: translateY(-1px);
+}
+
+#play-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .instructions {
@@ -124,6 +172,21 @@ body {
   padding: 8px 0;
   font-size: 14px;
   line-height: 1.6;
+}
+
+/* Информация о ежедневных картах */
+.daily-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 10px;
+}
+
+.daily-info p {
+  color: #00ff88;
+  font-size: 14px;
+  margin-bottom: 5px;
 }
 
 #leaderboard {
@@ -185,6 +248,31 @@ body {
   display: none !important;
 }
 
+.lobby-info {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.lobby-badge {
+  background: rgba(22, 33, 62, 0.95);
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 2px solid #00d4ff;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.6;
+  text-align: center;
+  min-width: 150px;
+}
+
+.lobby-badge br {
+  margin: 5px 0;
+}
+
 /* Адаптивность для мобильных */
 @media (max-width: 768px) {
   #play-menu {
@@ -193,6 +281,10 @@ body {
 
   #play-menu h1 {
     font-size: 36px;
+  }
+
+  .map-number {
+    font-size: 24px;
   }
 
   #leaderboard {
@@ -219,37 +311,7 @@ body {
   .instructions li {
     font-size: 12px;
   }
-}
 
-
-/* ... существующие стили ... */
-
-.lobby-info {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 1000;
-}
-
-.lobby-badge {
-  background: rgba(22, 33, 62, 0.95);
-  color: #fff;
-  padding: 15px 20px;
-  border-radius: 10px;
-  border: 2px solid #00d4ff;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-  font-size: 14px;
-  font-weight: bold;
-  line-height: 1.6;
-  text-align: center;
-  min-width: 150px;
-}
-
-.lobby-badge br {
-  margin: 5px 0;
-}
-
-@media (max-width: 768px) {
   .lobby-info {
     top: 10px;
     left: 10px;

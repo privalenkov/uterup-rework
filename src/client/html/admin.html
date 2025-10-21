@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin · Publish Today</title>
+  </head>
+  <body>
+    <main class="container" style="max-width:520px;margin:48px auto;padding:24px;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);background:#fff;">
+      <h1 style="margin:0 0 8px;">Публикация карты</h1>
+      <p style="margin:0 0 16px;color:#666;">Сгенерировать карту на сегодня (нужен пароль администратора).</p>
+
+      <form id="publish-form">
+        <label for="password" style="display:block;margin:12px 0 6px;">Пароль</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password"
+               style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;"/>
+
+        <button id="generateBtn" type="submit"
+                style="margin-top:16px;width:100%;padding:12px 14px;border:0;border-radius:12px;font-weight:600;cursor:pointer;background:#3b82f6;color:white;">
+          Сгенерировать карту на сегодня
+        </button>
+      </form>
+
+      <p id="status" class="status" style="margin-top:16px;color:#333;"></p>
+
+      <hr style="margin:24px 0;border:none;border-top:1px solid #eee;">
+      <a href="/" style="text-decoration:none;color:#3b82f6;">← На главную</a>
+    </main>
+  </body>
+</html>

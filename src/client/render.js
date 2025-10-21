@@ -7,10 +7,23 @@ const context = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let mapLogged = false;
+
 function render() {
   const { me, others, map } = getCurrentState();
   if (!me) {
     return;
+  }
+
+  // Отладка: выводим информацию о карте один раз
+  if (!mapLogged && map) {
+    console.log('Rendering with map:', {
+      height: map.length,
+      width: map[0] ? map[0].length : 0,
+      playerY: me.y,
+      playerX: me.x
+    });
+    mapLogged = true;
   }
 
   // Очищаем canvas
@@ -39,14 +52,17 @@ function render() {
 }
 
 function renderMap(map) {
-  if (!map) return;
+  if (!map) {
+    console.warn('renderMap called with no map');
+    return;
+  }
 
   const tileColors = {
     [Constants.TILE_TYPES.EMPTY]: null,
     [Constants.TILE_TYPES.SOLID]: '#8B4513',
     [Constants.TILE_TYPES.ICE]: '#87CEEB',
     [Constants.TILE_TYPES.SNOW]: '#FFFAFA',
-    [Constants.TILE_TYPES.SLOPE_LEFT]: '#FF6347',  // Красный для горки влево
+    [Constants.TILE_TYPES.SLOPE_LEFT]: '#FF6347',
     [Constants.TILE_TYPES.SLOPE_RIGHT]: '#FF8C00',
     [Constants.TILE_TYPES.FINISH]: '#FFD700'
   };
@@ -105,10 +121,10 @@ function renderPlayer(player, isMe = false) {
   // Цвет игрока
   context.fillStyle = isMe ? '#00FF00' : '#0080FF';
   
-  // ОСТАВЛЯЕМ ТОЛЬКО ПРИСЕДАНИЕ - визуальная подсказка что заряжаемся
+  // Приседание при зарядке
   let yOffset = 0;
   if (player.isCharging) {
-    yOffset = 8; // Приседание при зарядке
+    yOffset = 8;
   }
   
   // Рисуем игрока
@@ -162,11 +178,7 @@ function renderUI(player) {
   context.strokeText(`Jumps: ${player.jumpCount}`, 20, 40);
   context.fillText(`Jumps: ${player.jumpCount}`, 20, 40);
 
-  // УБРАЛИ: статус On Ground
-  // УБРАЛИ: процент зарядки
-  // УБРАЛИ: скорость (отладочная инфа)
-
-  // Инструкция (упрощенная)
+  // Инструкция
   context.fillStyle = '#FFFFFF';
   context.font = 'bold 14px Arial';
   const instructions = 'MOVE: ⬅️➡️ | JUMP: HOLD SPACE → SET DIRECTION → RELEASE';

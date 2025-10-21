@@ -31,6 +31,12 @@ export const connect = () => (
       alert(`Failed to join: ${data.reason}`);
       window.location.reload();
     });
+
+    socket.on('map_updated', payload => {
+      console.log('Daily map updated:', payload);
+      alert('Карта дня обновлена. Идёт перезагрузка...');
+      window.location.reload();
+    });
     
     socket.on('server_full', (data) => {
       alert(`Server is full! (${data.currentPlayers}/${data.maxPlayers} players)\nPlease try again later.`);

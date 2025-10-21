@@ -11,6 +11,20 @@ export function initState() {
   gameUpdates.length = 0;
 }
 
+// Новая функция для установки карты из API
+export function setMap(map) {
+  if (!map) {
+    console.error('setMap called with null/undefined map');
+    return;
+  }
+  
+  gameMap = map;
+  console.log('Map loaded from API:', {
+    height: map.length,
+    width: map[0] ? map[0].length : 0
+  });
+}
+
 export function processGameUpdate(update) {
   if (!firstServerTimestamp) {
     firstServerTimestamp = update.t;
@@ -19,9 +33,8 @@ export function processGameUpdate(update) {
 
   gameUpdates.push(update);
 
-  if (update.map) {
-    gameMap = update.map;
-  }
+  // Карта больше не приходит через сокеты
+  // Она загружается один раз через API при старте игры
 
   const base = getBaseUpdate();
   if (base > 0) {

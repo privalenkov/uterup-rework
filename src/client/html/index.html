@@ -11,30 +11,45 @@
   <div id="play-menu" class="hidden">
     <h1>Jump King .io</h1>
     <p>Reach the top with minimum jumps!</p>
-    <input type="text" id="username-input" placeholder="Enter your name" maxlength="15" />
-    <button id="play-button">START CLIMBING</button>
+    
+    <div id="map-info" class="map-info">
+      <div class="map-number">Загрузка...</div>
+    </div>
+
+    <div id="error-message" class="error-message hidden">
+      Ошибка загрузки карты
+    </div>
+    
+    <input type="text" id="username-input" placeholder="Введите ваш ник" maxlength="15" />
+    <button id="play-button" disabled>Загрузка...</button>
+    
     <div class="instructions">
-      <h3>How to Play:</h3>
+      <h3>Как играть:</h3>
       <ul>
-        <li>🎮 Move: Arrow Keys or A/D</li>
-        <li>⬆️ Jump: Hold SPACE, set direction, release</li>
-        <li>🎯 Master the charge timing!</li>
-        <li>🧊 <span style="color: #87CEEB;">Ice</span> - Slippery</li>
-        <li>❄️ <span style="color: #FFFAFA;">Snow</span> - Jump only</li>
-        <li>🔻 <span style="color: #FF6347;">Slope</span> - Slide down</li>
-        <li>🏆 <span style="color: #FFD700;">Finish</span> - Reach the top!</li>
+        <li>🎮 Движение: Стрелки или A/D</li>
+        <li>⬆️ Прыжок: Зажми ПРОБЕЛ, выбери направление, отпусти</li>
+        <li>🎯 Овладей таймингом зарядки!</li>
+        <li>🧊 <span style="color: #87CEEB;">Лёд</span> - Скользко</li>
+        <li>❄️ <span style="color: #FFFAFA;">Снег</span> - Только прыжки</li>
+        <li>🔻 <span style="color: #FF6347;">Горка</span> - Скатывает вниз</li>
+        <li>🏆 <span style="color: #FFD700;">Финиш</span> - Доберись до вершины!</li>
       </ul>
+    </div>
+
+    <div class="daily-info">
+      <p>🗓️ Каждый день новая карта!</p>
+      <p>⏰ Обновление в 00:00 МСК</p>
     </div>
   </div>
 
   <div id="leaderboard" class="hidden">
-    <h2>🏆 Top Climbers</h2>
+    <h2>🏆 Лучшие за сегодня</h2>
     <table>
       <thead>
         <tr>
           <th>#</th>
-          <th>Player</th>
-          <th>Jumps</th>
+          <th>Игрок</th>
+          <th>Прыжки</th>
         </tr>
       </thead>
       <tbody>

@@ -3,7 +3,7 @@ const io = require('socket.io-client');
 
 // const SERVER_URL = 'http://localhost:3000';
 const SERVER_URL = 'https://uterup-testwer-privalenkov.amvera.io';
-const BOT_COUNT = 100;
+const BOT_COUNT = 200;
 
 class Bot {
   constructor(id) {

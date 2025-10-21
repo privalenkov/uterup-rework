@@ -3,12 +3,13 @@ const Player = require('./player');
 const { generateMap } = require('./map');
 
 class Game {
-  constructor() {
+  constructor(map = null) {
     this.sockets = {};
     this.players = {};
     this.inputs = {};
     this.lastUpdateTime = Date.now();
-    this.map = generateMap();
+    // Используем переданную карту или генерируем новую
+    this.map = map || generateMap();
     
     // Кэш для nearby players (обновляется реже)
     this.nearbyPlayersCache = {};
@@ -129,11 +130,8 @@ class Game {
       leaderboard: this.getLeaderboard()
     };
 
-    // Карту отправляем только один раз
-    if (!player.mapSent) {
-      update.map = this.map;
-      player.mapSent = true;
-    }
+    // УДАЛЕНО: Больше не отправляем карту через сокеты
+    // Карта загружается через API при запуске игры
 
     return update;
   }

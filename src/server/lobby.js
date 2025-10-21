@@ -2,19 +2,29 @@ const Game = require('./game');
 const Constants = require('../shared/constants');
 
 class Lobby {
-  constructor(id) {
+  constructor(id, map = null) {
     this.id = id;
-    this.game = new Game();
+    this.game = new Game(map); // Передаем карту в игру
     this.players = new Map();
     this.maxPlayers = 10;
     this.createdAt = Date.now();
     
-    // НОВОЕ: Счетчик зарезервированных слотов
+    // Счетчик зарезервированных слотов
     this.reservedSlots = 0;
   }
 
+  setMap(map) {
+    // Вежливо отключим игроков, чтобы они переподключились к новой карте
+    for (const [socket] of this.players) {
+      try { socket.emit('map_updated'); } catch {}
+      setTimeout(() => { try { socket.disconnect(true); } catch {} }, 50);
+    }
+    this.players.clear();
+    this.reservedSlots = 0;
+    this.game = new Game(map); // Новый инстанс игры с новой картой
+  }
+
   isFull() {
-    // ИЗМЕНЕНО: Учитываем зарезервированные слоты
     return (this.players.size + this.reservedSlots) >= this.maxPlayers;
   }
 
@@ -41,7 +51,6 @@ class Lobby {
   }
 
   addPlayer(socket, username) {
-    // Слот уже зарезервирован, просто добавляем игрока
     const player = this.game.addPlayer(socket, username);
     if (player) {
       this.players.set(socket.id, {
@@ -49,11 +58,9 @@ class Lobby {
         username: username,
         joinedAt: Date.now()
       });
-      // Освобождаем зарезервированный слот
       this.releaseSlot();
       return true;
     }
-    // Если не удалось добавить - освобождаем слот
     this.releaseSlot();
     return false;
   }
@@ -83,15 +90,16 @@ class Lobby {
 }
 
 class LobbyManager {
-  constructor() {
+  constructor(dailyMap = null) {
     this.lobbies = new Map();
     this.playerToLobby = new Map();
     this.nextLobbyId = 1;
+    this.dailyMap = dailyMap; // Карта дня
     
     // Глобальный лимит на весь сервер
     this.maxTotalPlayers = Constants.PLAYER_MAX_COUNT; // 70 игроков
     
-    // КРИТИЧЕСКИ ВАЖНО: Счетчик зарезервированных слотов на уровне сервера
+    // Счетчик зарезервированных слотов на уровне сервера
     this.reservedSlots = 0;
     
     // Создаем первое лобби
@@ -108,11 +116,19 @@ class LobbyManager {
     }, 10000);
   }
 
+  setDailyMap(map) {
+    this.dailyMap = map;
+    for (const [, lobby] of this.lobbies) {
+      lobby.setMap(map);
+    }
+    console.log('[LobbyManager] 🔁 Daily map applied to all lobbies');
+  }
+
   createLobby() {
     const lobbyId = `lobby_${this.nextLobbyId++}`;
-    const lobby = new Lobby(lobbyId);
+    const lobby = new Lobby(lobbyId, this.dailyMap); // Передаем карту дня
     this.lobbies.set(lobbyId, lobby);
-    console.log(`[LobbyManager] Created ${lobbyId}`);
+    console.log(`[LobbyManager] Created ${lobbyId} with map:`, this.dailyMap ? 'YES' : 'NO');
     return lobby;
   }
 
@@ -232,7 +248,6 @@ class LobbyManager {
       
       // ОСВОБОЖДАЕМ ОБА ЗАРЕЗЕРВИРОВАННЫХ СЛОТА (на сервере и в лобби)
       this.reservedSlots--;
-      // lobby.releaseSlot() уже вызван внутри lobby.addPlayer()
       
       return false;
     }
